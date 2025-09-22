@@ -1,0 +1,104 @@
+
+# EditorConfig is awesome: https://editorconfig.org
+
+# Top-most EditorConfig file
+root = true
+
+# ---------------------------------------------------------
+# Global defaults (apply to all text/code files)
+# ---------------------------------------------------------
+[*]
+end_of_line = lf                 # Force Unix-style line endings (LF). Cross-platform safe.
+charset = utf-8                  # Standard text encoding. Works everywhere in modern dev.
+insert_final_newline = true      # Ensure every file ends with a newline. POSIX-friendly.
+trim_trailing_whitespace = true  # Removes extra spaces at end of lines (avoids messy diffs)
+
+# ---------------------------------------------------------
+# Python (PEP 8 standard)
+# ---------------------------------------------------------
+[*.py]
+indent_style = space             # Python forbids tabs, enforce spaces.
+indent_size = 4                  # PEP 8 requires 4 spaces.
+max_line_length = 120            # Non-core property; align formatter configs too.
+
+# ---------------------------------------------------------
+# reStructuredText (Python documentation)
+# ---------------------------------------------------------
+[*.rst]
+indent_style = space
+indent_size = 3                  # Common convention in Sphinx docs.
+trim_trailing_whitespace = false # Trailing spaces can affect formatting.
+max_line_length = 120
+
+# ---------------------------------------------------------
+# JavaScript / TypeScript (Node.js & frontend standard)
+# ---------------------------------------------------------
+[*.{js,jsx,ts,tsx}]
+indent_style = space
+indent_size = 2
+max_line_length = 120            # Non-core property; align ESLint/Prettier.
+
+# ---------------------------------------------------------
+# JSON / YAML / Common config files
+# ---------------------------------------------------------
+[*.{json,yml,yaml}]
+indent_style = space
+indent_size = 2                  # Most tools (npm, Docker, GitHub Actions) expect 2 spaces.
+
+# ---------------------------------------------------------
+# TOML (pyproject.toml, etc.)
+# ---------------------------------------------------------
+[*.toml]
+indent_style = space
+indent_size = 2
+
+# ---------------------------------------------------------
+# INI / CFG (setup.cfg, ini-style configs)
+# ---------------------------------------------------------
+[*.{ini,cfg}]
+indent_style = space
+indent_size = 2
+
+# ---------------------------------------------------------
+# Markdown (special handling)
+# ---------------------------------------------------------
+[*.md]
+indent_style = space
+indent_size = 2                  # GitHub/Prettier convention for lists.
+trim_trailing_whitespace = false # Preserve double-space line breaks in Markdown.
+
+# ---------------------------------------------------------
+# HTML / XML / CSS family
+# ---------------------------------------------------------
+[*.{html,xml,css,scss,less}]
+indent_style = space
+indent_size = 2
+
+# ---------------------------------------------------------
+# Dockerfiles
+# ---------------------------------------------------------
+[Dockerfile*]
+indent_style = space
+indent_size = 2
+
+# ---------------------------------------------------------
+# Makefiles (special case)
+# ---------------------------------------------------------
+[{Makefile,makefile,GNUmakefile}]
+indent_style = tab               # Make requires *literal tabs* for recipe lines.
+tab_width = 4                    # Display width only; doesn’t affect semantics.
+
+# ---------------------------------------------------------
+# Shell scripts
+# ---------------------------------------------------------
+[*.sh]
+indent_style = space
+indent_size = 2
+trim_trailing_whitespace = true  # Safe: prevents messy diffs, doesn’t break scripts.
+insert_final_newline = true      # Extra safety: ensures POSIX-compliant file endings.
+
+# ---------------------------------------------------------
+# Diff / Patch files (avoid altering significant whitespace)
+# ---------------------------------------------------------
+[*.{diff,patch}]
+trim_trailing_whitespace = false

@@ -1,0 +1,242 @@
+# ==================================================================================================================== #
+#                                                BUILD SYSTEM (PEP 517/518)                                            #
+# ==================================================================================================================== #
+# Modern minimal backend. Works great with PEP 621 metadata + uv.
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+
+# ==================================================================================================================== #
+#                                                    PROJECT METADATA (PEP 621)                                        #
+# ==================================================================================================================== #
+# Core, declarative metadata used by build tools and indexes (wheel/sdist).
+[project]
+name = "ugit-diy"   # The distribution name on PyPI aka the public package name for installers, not the import name
+dynamic = ["version"]
+description = "A DIY Python implementation of a simple Git-like version control system."
+readme = "README.md"
+
+authors = [
+    { name = "ovidiu.pascal", email = "ovidiu.pascal@orange.com" }
+]
+
+# License information (preferred: a LICENSE file at project root)
+license = { file = "LICENSE" }
+
+# Minimum supported Python version for this project
+requires-python = ">=3.12"
+
+# Keep runtime deps lean; notebooks & tooling go to dev groups/extras (not embedded in wheels/sdists).
+dependencies = []
+
+# Keywords help with discoverability on PyPI
+keywords = ["git", "vcs", "learning", "cli", "python"]
+
+# Trove classifiers (used by PyPI and tooling)
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux"
+]
+
+# Helpful links (repository, homepage, issue tracker, etc.)
+[project.urls]
+Homepage = "https://github.com/username/ugit-diy-python"
+Repository = "https://github.com/username/ugit-diy-python.git"
+Issues = "https://github.com/username/ugit-diy-python/issues"
+
+# ==================================================================================================================== #
+#                                               CLI ENTRY POINTS (SCRIPTS)                                             #
+# ==================================================================================================================== #
+# Optional CLI command(s) exposed when the project is installed.
+# Creates a wrapper script in .venv/bin (Linux/Mac) or .venv/Scripts (Windows).
+# Example: after install, run 'ugit' instead of 'python -m ugit_diy.cli.main'
+[project.scripts]
+ugit = "ugit_diy.cli:main"
+
+# ==================================================================================================================== #
+#                           DEV & DOCS DEPENDENCIES — uv Groups vs pip/poetry Extras                                   #
+# ==================================================================================================================== #
+# (PEP 735) [dependency-groups] — uv-only, LOCAL-ONLY dev groups (never included in wheels/sdists).
+# Use when DEVELOPING with uv:
+#   uv sync --group dev
+#   uv sync --group docs
+[dependency-groups]
+dev = [
+  "pyright>=1.1.404",
+  "ruff>=0.12.10"
+]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9"
+]
+
+# (PEP 621) [project.optional-dependencies] — EXTRAS published in package metadata (visible to pip/poetry/hatch).
+# Use when INSTALLING with classic tools:
+#   pip install .[dev]
+#   pip install .[docs]
+#
+# NOTE: Extras MUST be explicit lists. They CANNOT alias uv groups.
+#       (Your previous attempt failed because TOML here expects an array of strings, not a table.)
+[project.optional-dependencies]
+#dev = ["pyright>=1.1.404", "ruff>=0.12.10"]
+#docs = ["mkdocs>=1.6", "mkdocs-material>=9"]
+
+
+
+
+# ==================================================================================================================== #
+#                                            HATCH: EXPLICIT SRC PACKAGE DISCOVERY                                     #
+# ==================================================================================================================== #
+[tool.hatch.version]
+path = "src/ugit_diy/__init__.py"
+
+# Tell Hatchling where to find your package (src/ layout) and ship the typing marker.
+[tool.hatch.build.targets.wheel]
+packages = ["src/ugit_diy"]           # Point directly at the src path (string form avoids dict/table parsing issues).
+include = [
+  "src/ugit_diy/py.typed"
+]
+
+# Source distribution: include everything needed to rebuild project from source.
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/ugit_diy/**",
+  "src/ugit_diy/py.typed",
+  "README.md",
+  "LICENSE",
+  "pyproject.toml"
+]
+
+# ==================================================================================================================== #
+#                                                         RUFF                                                         #
+# ==================================================================================================================== #
+# Linter + formatter config in one place to avoid ruff.toml drift.
+[tool.ruff]
+exclude = [
+  ".idea",
+  ".vscode",
+  ".git",
+  ".venv",
+  "__pycache__",
+  ".ipynb_checkpoints",
+  "build",
+  "dist",
+  "node_modules",
+  "htmlcov"
+]
+line-length = 120
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+# Strict but formatter-safe baseline:
+# - E/W: pycodestyle; F: pyflakes; I: isort; UP: pyupgrade; B: bugbear
+# - COM: commas (minus COM812); ISC: implicit string concat; ICN: import conventions
+# - PGH: pragma hygiene; RUF: ruff-specific
+select = ["E", "W", "F", "I", "UP", "B", "COM", "ISC", "ICN", "PGH", "RUF"]
+
+# Let the formatter handle wrapping and trailing commas; avoid flip-flops.
+ignore = [
+  "E501",   # line too long -> formatter decides
+  "COM812"  # missing trailing comma -> formatter decides
+]
+
+# Auto-fix where safe
+fixable = ["ALL"]
+unfixable = []
+
+# Treat underscore / unused_* as intentionally unused
+dummy-variable-rgx = "^(_|unused_).*"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["F841"]       # allow unused vars in tests
+"docs/**/*.py" = ["E402"]   # allow "import not at top" in docs
+"**/__init__.py" = ["F401"] # allow re-export patterns
+
+[tool.ruff.format]
+# Formatter owns formatting; keep it simple and consistent.
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = false
+docstring-code-line-length = "dynamic"
+
+# ==================================================================================================================== #
+#                                                       PYRIGHT                                                        #
+# ==================================================================================================================== #
+# NOTE: We are using a SOURCE LAYOUT. Configure Pyright to resolve imports via 'src'.
+# NOTE: If pyrightconfig.jsonc also exists, it takes precedence over this table.
+
+[tool.pyright]
+# --- Environment / interpreter selection ---
+# Make Pyright CLI find your project-local venv: <root>/.venv
+venvPath = "."
+venv = ".venv"
+
+# Target versions/platform (WSL/UNIX)
+pythonVersion = "3.12"
+pythonPlatform = "Linux"
+
+# --- Project layout ---
+include = ["."]
+exclude = [
+  ".idea",
+  ".vscode",
+  ".venv",
+  ".git",
+  "**/__pycache__",
+  ".mypy_cache",
+  ".pytest_cache",
+  "build",
+  "dist",
+  "htmlcov",
+  "node_modules",
+  "**/.ipynb_checkpoints"
+]
+
+# Use library code when stubs are missing (more practical in strict mode)
+useLibraryCodeForTypes = true
+
+# --- Strictness baseline ---
+typeCheckingMode = "strict"
+# Many third-party libs still lack stubs; downgrade to "warning" (or "none" if needed).
+reportMissingTypeStubs = "warning"
+# Missing imports should remain a hard error.
+reportMissingImports = "error"
+# Clean up stale/pointless ignores (# type: ignore / # pyright: ignore)
+reportUnnecessaryTypeIgnoreComment = "error"
+# Catch subtle bugs / style issues strict mode might not elevate
+reportImplicitStringConcatenation = "error"
+reportPrivateUsage = "error"
+
+# CLI noise toggle; enable when debugging import resolution.
+verboseOutput = false
+
+# --- Execution environments (robust for SRC layout) ---
+# Ensures imports like `import ugit_diy` work cleanly in editors and match installed behavior.
+executionEnvironments = [
+  { root = ".", extraPaths = ["src"], pythonVersion = "3.12", pythonPlatform = "Linux" }
+]
+
+# ==================================================================================================================== #
+#                                                     COVERAGE.PY                                                      #
+# ==================================================================================================================== #
+# Measures how much of your code executes during tests. Branch coverage is stricter than line coverage.
+# Only measure the package (not tests or deps). Fail CI if total coverage < 85%. Show missing lines; hide fully covered files.
+[tool.coverage.run]
+branch = true
+source = ["ugit_diy"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true
