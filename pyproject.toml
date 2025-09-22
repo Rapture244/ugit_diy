@@ -178,8 +178,7 @@ docstring-code-line-length = "dynamic"
 
 [tool.pyright]
 # --- Environment / interpreter selection ---
-# Make Pyright CLI find your project-local venv: <root>/.venv
-venvPath = "."
+venvPath = "."              # Let Pyright locate your local venv in project root
 venv = ".venv"
 
 # Target versions/platform (WSL/UNIX)
@@ -187,7 +186,8 @@ pythonVersion = "3.12"
 pythonPlatform = "Linux"
 
 # --- Project layout ---
-include = ["."]
+# Analyze what we own: src and tests. Use explicit roots for clarity and speed.
+include = ["src", "tests"]
 exclude = [
   ".idea",
   ".vscode",
@@ -208,23 +208,42 @@ useLibraryCodeForTypes = true
 
 # --- Strictness baseline ---
 typeCheckingMode = "strict"
-# Many third-party libs still lack stubs; downgrade to "warning" (or "none" if needed).
-reportMissingTypeStubs = "warning"
-# Missing imports should remain a hard error.
-reportMissingImports = "error"
-# Clean up stale/pointless ignores (# type: ignore / # pyright: ignore)
-reportUnnecessaryTypeIgnoreComment = "error"
-# Catch subtle bugs / style issues strict mode might not elevate
-reportImplicitStringConcatenation = "error"
-reportPrivateUsage = "error"
+reportMissingTypeStubs = "warning"              # Downgrade missing stubs (too noisy otherwise)
+reportMissingImports = "error"                  # Missing imports stay hard errors
+reportUnnecessaryTypeIgnoreComment = "error"    # Clean up stale ignores
+reportImplicitStringConcatenation = "error"     # Catch silent bugs with multiline strings
+reportPrivateUsage = "error"                    # Prevent leaking internal APIs
 
-# CLI noise toggle; enable when debugging import resolution.
+# --- Additional diagnostics (strict but practical) ---
+# Encourage full typing without blocking iteration
+reportUnknownVariableType = "warning"
+reportUnknownParameterType = "warning"
+reportUnknownArgumentType = "warning"
+reportUnknownMemberType = "warning"
+reportUntypedFunctionDecorator = "warning"
+
+# Correctness hard errors
+reportMissingTypeArgument = "error"
+reportIncompatibleVariableOverride = "error"
+
+# Hygiene / cleanup
+reportUnusedImport = "warning"
+reportUnusedVariable = "warning"
+reportUnreachable = "warning"
+
+# Optional but handy if you add custom stubs later
+stubPath = "typings"
+
+# CLI noise toggle; enable when debugging import resolution
 verboseOutput = false
 
 # --- Execution environments (robust for SRC layout) ---
-# Ensures imports like `import ugit_diy` work cleanly in editors and match installed behavior.
 executionEnvironments = [
-  { root = ".", extraPaths = ["src"], pythonVersion = "3.12", pythonPlatform = "Linux" }
+  # Default project root: imports like "import ugit_diy" resolve to src/
+  { root = ".", extraPaths = ["src"], pythonVersion = "3.12", pythonPlatform = "Linux" },
+
+  # Test root: opening tests/ in editor still resolves to src/
+  { root = "tests", extraPaths = ["src"], pythonVersion = "3.12", pythonPlatform = "Linux" }
 ]
 
 # ==================================================================================================================== #
