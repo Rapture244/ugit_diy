@@ -66,8 +66,9 @@ ugit = "ugit_diy.cli:main"
 #   uv sync --group docs
 [dependency-groups]
 dev = [
+  "pre-commit>=4.3.0",
   "pyright>=1.1.404",
-  "ruff>=0.12.10"
+  "ruff>=0.12.10",
 ]
 docs = [
   "mkdocs>=1.6",
@@ -114,7 +115,7 @@ include = [
 # ==================================================================================================================== #
 #                                                         RUFF                                                         #
 # ==================================================================================================================== #
-# Linter + formatter config in one place to avoid ruff.toml drift.
+# Linter + formatter config in one place to avoid ruff.toml drift
 [tool.ruff]
 exclude = [
   ".idea",
@@ -132,42 +133,109 @@ line-length = 120
 indent-width = 4
 target-version = "py312"
 
-[tool.ruff.lint]
-# Strict but formatter-safe baseline:
-# - E/W: pycodestyle; F: pyflakes; I: isort; UP: pyupgrade; B: bugbear
-# - COM: commas (minus COM812); ISC: implicit string concat; ICN: import conventions
-# - PGH: pragma hygiene; RUF: ruff-specific
-select = ["E", "W", "F", "I", "UP", "B", "COM", "ISC", "ICN", "PGH", "RUF"]
+# --- File discovery / execution --- #
+force-exclude = true        # Always respect [tool.ruff].exclude, even if you pass paths explicitly (saves surprises)
+cache-dir = ".ruff_cache"   # Store Ruff’s cache in a predictable folder; easy to .gitignore or cache in CI
 
-# Let the formatter handle wrapping and trailing commas; avoid flip-flops.
+# --- Fixing behavior --- #
+fix = false                 # Default to check-only. Ruff will fix issues ONLY when you explicitly run with --fix
+
+# ----------------------------------------------- LINTER (rules & behavior) ------------------------------------------- #
+[tool.ruff.lint]
+# Rule families included in linting:
+# - E/W   : PEP8 style & whitespace rules (pycodestyle)
+# - F     : Logic errors (undefined names, unused vars/imports) (pyflakes)
+# - I     : Import sorting & cleanup (isort)
+# - UP    : Modern Python syntax upgrades (pyupgrade)
+# - B     : Bug and anti-pattern detection (flake8-bugbear)
+# - COM   : Comma rules (trailing/missing commas, except COM812 left to formatter)
+# - ISC   : Implicit string concatenation (avoid subtle bugs)
+# - ICN   : Import naming conventions
+# - PGH   : Pragma hygiene (valid / unnecessary `# noqa` and ignores)
+# - RUF   : Ruff-specific best practices
+# - D     : Docstring rules (pydocstyle, enforcing Google convention)
+# - N     : Naming conventions (PEP8: ClassName, function_name, CONSTANT_CASE, etc.)
+# - ARG   : Detect unused function arguments
+# - SIM   : Simplify overly complex code (suggest cleaner idioms)
+# - RET   : Ensure functions return consistently (all paths return or none do)
+# - S     : Security checks (subset of Bandit rules, e.g. unsafe `eval`)
+# - G     : Logging best practices (e.g. prefer lazy logging with `%s` or f-string)
+# - T20   : Debug artifacts (e.g. `print`, `pdb` calls)
+# - BLE   : Broad/bare excepts (catching `Exception` or no exception type)
+# - PT    : Pytest best practices (parametrize, fixtures, etc.)
+# - TCH   : Type-checking imports (organize imports inside `if TYPE_CHECKING`)
+# - A     : Prevent shadowing Python builtins (don’t redefine `list`, `dict`, etc.)
+# - DTZ   : Datetime usage (require timezone-aware datetimes)
+
+select = [
+  "E", "W", "F", "I", "UP", "B", "COM", "ISC", "ICN", "PGH", "RUF", "D",
+  "N", "ARG", "SIM", "RET", "S", "G", "T20", "BLE", "PT", "TCH", "A", "DTZ"
+]
+
+# Let the formatter handle wrapping and trailing commas
 ignore = [
   "E501",   # line too long -> formatter decides
   "COM812"  # missing trailing comma -> formatter decides
 ]
 
 # Auto-fix where safe
-fixable = ["ALL"]
-unfixable = []
+# Allow only mechanical, semantics-preserving fixes:
+# - I: import sorting
+# - UP: modern syntax upgrades
+# - E/W: pycodestyle whitespace/indent/cosmetic fixes
+# - COM: comma/whitespace tweaks
+# - F401/F841: remove truly unused imports/variables
+fixable = ["I", "UP", "E", "W", "COM", "F401", "F841"]
+
+# Block categories that could change behavior or intent:
+# - B: bugbear (some fixes delete/reshape logic)
+# - ISC: implicit string concat rewrites
+# - ICN: import-convention renames (can break APIs/expectations)
+# - PGH: pragma hygiene (can drop ignores you rely on)
+# - RUF015: list(...)[0] -> next(iter(...)) changes exception semantics
+unfixable = ["B", "ISC", "ICN", "PGH", "RUF015"]
 
 # Treat underscore / unused_* as intentionally unused
 dummy-variable-rgx = "^(_|unused_).*"
 
+# ----------------------------------------------- LINTER: FAMILY CONFIGS --------------------------------------------- #
+# Docstrings: enforce Google-style across public API.
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+# Import sorting: make Ruff aware of src/ layout and your package.
 [tool.ruff.lint.isort]
+known-first-party = ["ugit_diy"]
+src-paths = ["src"]
 combine-as-imports = true
 force-sort-within-sections = true
 
+# Pytest style: enforce consistent fixture and parametrize syntax.
+[tool.ruff.lint.pytest]
+fixture-parentheses = true           # Use @pytest.fixture() (with parens), even when no args are passed
+parametrize-names-type = "tuple"     # Prefer tuple style: @pytest.mark.parametrize(("a","b"), [...])
+
+# Import hygiene: prefer explicit absolute imports (ban relative "from .x import y").
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"         # Options: "all" | "parents" | "none"
+
+# Builtins safety: don’t redefine Python builtins (list, dict, id, type, etc.).
+[tool.ruff.lint.flake8-builtins]
+builtins-ignorelist = []             # Add exceptions here only if absolutely necessary
+
+# Per-file ignores: keep minimal; add more only when noise appears.
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["F841"]       # allow unused vars in tests
 "docs/**/*.py" = ["E402"]   # allow "import not at top" in docs
 "**/__init__.py" = ["F401"] # allow re-export patterns
 
+# ------------------------------------------------- FORMATTER (code style) ------------------------------------------- #
 [tool.ruff.format]
-# Formatter owns formatting; keep it simple and consistent.
 quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "lf"
-docstring-code-format = false
+docstring-code-format = false             # Format code blocks inside docstrings as if they were Python
 docstring-code-line-length = "dynamic"
 
 # ==================================================================================================================== #
