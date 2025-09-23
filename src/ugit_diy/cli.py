@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 # !INFO: src/ugit_diy/cli.py
+"""Command-line interface for ugit_diy.
 
+Parses arguments and dispatches to command handlers.
+"""
 
 # ==================================================================================================================== #
 #                                                        IMPORTS                                                       #
