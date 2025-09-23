@@ -4,39 +4,34 @@ repos:
       # 1) Ruff Formatter - auto-format code (style only, like Black)
       - id: ruff-format
         name: ruff format
-        entry: uv
-        args: ["run", "ruff", "format", "--force-exclude"]
+        entry: .venv/bin/ruff
+        args: ["format", "--force-exclude"]
         language: system
         types: [python]
 
       # 2) Ruff linter (safe autofix) - catch issues + auto-fix safe ones
       - id: ruff-lint-safe-fix
         name: ruff check (safe autofix)
-        entry: uv
-        args: ["run", "ruff", "check", "--fix", "--show-fixes", "--output-format", "full", "--force-exclude"]
+        entry: .venv/bin/ruff
+        args: ["check", "--fix", "--show-fixes", "--output-format", "full", "--force-exclude"]
         language: system
         types: [python]
 
       # 3) Ruff linter (verify only) - final check, fail if issues remain
       - id: ruff-lint-verify
         name: ruff check (verify, fail if issues remain)
-        entry: uv
-        args: ["run", "ruff", "check", "--output-format", "full", "--force-exclude"]
+        entry: .venv/bin/ruff
+        args: ["check", "--output-format", "full", "--force-exclude"]
         language: system
         types: [python]
 
       # 4) Pyright - Static type checking
       - id: pyright
         name: pyright (type checking)
-        entry: uv
-        args: ["run", "pyright"]
+        entry: .venv/bin/pyright
         language: system
         types: [python]
 
 # Default Python for pre-commit hooks
 default_language_version:
   python: python3
-
-
-
-
