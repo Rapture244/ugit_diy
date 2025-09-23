@@ -1,0 +1,107 @@
+{
+  // ==================================================================================================================
+  //                                                      PYRIGHT
+  // ==================================================================================================================
+  // NOTE: We are using a SOURCE LAYOUT. Configure Pyright to resolve imports via 'src'.
+  // This JSONC file is the single source of truth (Pyright ignores [tool.pyright] in pyproject.toml).
+  //
+  // Optional: JSON schema helps editors validate keys & offer IntelliSense.
+  "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/pyright/schema/pyrightconfig.schema.json",
+
+  // --- Environment / interpreter selection ---
+  // Make Pyright CLI find your project-local venv: <root>/.venv
+  "venvPath": ".",
+  "venv": ".venv",
+
+  // Target versions/platform (WSL/UNIX)
+  "pythonVersion": "3.12",
+  "pythonPlatform": "Linux",
+
+  // --- Project layout ---
+  // Analyze only what we own (faster, clearer). Use explicit roots instead of "."
+  "include": ["src", "tests"],
+  "exclude": [
+    ".idea",
+    ".vscode",
+    ".venv",
+    ".git",
+    "**/__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    "build",
+    "dist",
+    "htmlcov",
+    "node_modules",
+    "**/.ipynb_checkpoints"
+  ],
+
+  // Use library code when stubs are missing (more practical in strict mode)
+  "useLibraryCodeForTypes": true,
+
+  // --- Strictness baseline ---
+  "typeCheckingMode": "strict",
+
+  // Many third-party libs still lack stubs; downgrade to "warning" (or "none" if needed).
+  "reportMissingTypeStubs": "warning",
+
+  // Missing imports should remain a hard error.
+  "reportMissingImports": "error",
+
+  // Clean up stale/pointless ignores (# type: ignore / # pyright: ignore)
+  "reportUnnecessaryTypeIgnoreComment": "error",
+
+  // Catch subtle bugs / style issues strict mode might not elevate
+  "reportImplicitStringConcatenation": "error",
+  "reportPrivateUsage": "error",
+
+  // --- Additional diagnostics (strict but practical) ---
+  // Encourage full typing without blocking iteration
+  "reportUnknownVariableType": "warning",
+  "reportUnknownParameterType": "warning",
+  "reportUnknownArgumentType": "warning",
+  "reportUnknownMemberType": "warning",
+  "reportUntypedFunctionDecorator": "warning",
+
+  // Correctness hard errors
+  "reportMissingTypeArgument": "error",
+  "reportIncompatibleVariableOverride": "error",
+
+  // Hygiene / cleanup (keep codebase tidy)
+  "reportUnusedImport": "warning",
+  "reportUnusedVariable": "warning",
+  "reportUnreachable": "warning",
+
+  // Optional but handy if you add custom stubs later (keep folder at repo root)
+  "stubPath": "typings",
+
+  // CLI noise toggle; enable when debugging import resolution.
+  "verboseOutput": false,
+
+  // --- Execution environments (robust for SRC layout) ---
+  // Ensures imports like `import ugit_diy` work cleanly in editors and match installed behavior.
+  // Provide a tests-specific environment as well (keeps editors happy when opening tests/ directly).
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": ["src"],
+      "pythonVersion": "3.12",
+      "pythonPlatform": "Linux"
+    },
+    {
+      "root": "tests",
+      "extraPaths": ["src"],
+      "pythonVersion": "3.12",
+      "pythonPlatform": "Linux"
+    }
+  ]
+
+  // ---------------------------------------------------------------------------------------------------------------
+  // Optional toggles you can enable later:
+  // - Suppress errors from site-packages (3rd-party libs w/o types):
+  //   "ignoreExternal": true
+  //
+  // - Loosen tests only (e.g., basic mode in tests):
+  //   Create tests/pyrightconfig.jsonc with:
+  //   { "typeCheckingMode": "basic" }
+  // ---------------------------------------------------------------------------------------------------------------
+}
