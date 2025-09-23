@@ -76,9 +76,15 @@ fix = false
 # - TCH   : Type-checking imports (organize imports inside `if TYPE_CHECKING`)
 # - A     : Prevent shadowing Python builtins (don’t redefine `list`, `dict`, etc.)
 # - DTZ   : Datetime usage (require timezone-aware datetimes)
+# - TID   : Import hygiene (ban relative imports; see [lint.flake8-tidy-imports])
+# - C4    : Comprehension idioms (flake8-comprehensions; more pythonic comps/gens)
+# - PTH   : Prefer pathlib over os.path & friends (flake8-use-pathlib)
+# - TRY   : Exception-handling best practices (tryceratops; complements BLE/B904)
+# - RSE   : Raise statement style polish (minor consistency rules)
 select = [
   "E", "W", "F", "I", "UP", "B", "COM", "ISC", "ICN", "PGH", "RUF", "D",
-  "N", "ARG", "SIM", "RET", "S", "G", "T20", "BLE", "PT", "TCH", "A", "DTZ"
+  "N", "ARG", "SIM", "RET", "S", "G", "T20", "BLE", "PT", "TCH", "A", "DTZ",
+  "TID", "C4", "PTH", "TRY", "RSE"
 ]
 
 # Let the formatter handle wrapping and trailing commas.
