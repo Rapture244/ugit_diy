@@ -155,9 +155,9 @@ builtins-ignorelist = []              # Add exceptions here only if absolutely n
 # In ruff.toml, use [lint.per-file-ignores].
 # ==================================================================================================================== #
 [lint.per-file-ignores]
-"tests/**" = ["F841"]       # allow unused vars in tests
-"docs/**/*.py" = ["E402"]   # allow "import not at top" in docs
-"**/__init__.py" = ["F401"] # allow re-export patterns
+"tests/**" = ["F841", "S101"]       # allow unused vars and assert in tests
+"docs/**/*.py" = ["E402"]           # allow "import not at top" in docs
+"**/__init__.py" = ["F401"]         # allow re-export patterns
 
 # ==================================================================================================================== #
 # OPINIONATED CODE STYLE
