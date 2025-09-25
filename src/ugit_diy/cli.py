@@ -13,7 +13,7 @@ import argparse
 from importlib.metadata import PackageNotFoundError, version as _v
 
 # local
-from . import __version__
+from ugit_diy.__init__ import __version__
 
 # ==================================================================================================================== #
 #                                                       CONSTANTS                                                      #
@@ -82,7 +82,7 @@ def parse_args() -> argparse.Namespace:
     # If invoked with no options at all, show the help (UV shows guidance by default).
     if not vars(args):
         parser.print_help()
-        parser.exit(0)
+        parser.exit(0)  # raises SystemExit(0)
 
     return args
 
