@@ -68,6 +68,7 @@ ugit = "ugit_diy.cli:main"
 dev = [
   "pre-commit>=4.3.0",
   "pyright>=1.1.404",
+  "pytest>=8.4.2",
   "ruff>=0.12.10",
 ]
 docs = [

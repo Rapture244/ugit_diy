@@ -1,49 +1,41 @@
 repos:
+  # ================================================================================================================== #
+  #                                                       RUFF                                                        #
+  # ================================================================================================================== #
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.13.1
+    hooks:
+      # 1) Ruff Formatter — auto-format code (style only, like Black)
+      - id: ruff-format
+
+      # 2) Ruff Linter (safe autofix) — catch issues + auto-fix safe ones
+      - id: ruff
+        name: ruff check (safe autofix)
+        args: ["--fix", "--show-fixes", "--output-format", "full"]
+
+  # ================================================================================================================== #
+  #                                                  PYRIGHT + PYTEST                                                 #
+  # ================================================================================================================== #
   - repo: local
     hooks:
-      # 1) Ruff Formatter - auto-format code (style only, like Black)
-      - id: ruff-format
-        name: ruff format
-        entry: .venv/bin/ruff
-        args: ["format", "--force-exclude"]
-        language: system
-        types: [python]
-
-      # 2) Ruff linter (safe autofix) - catch issues + auto-fix safe ones
-      - id: ruff-lint-safe-fix
-        name: ruff check (safe autofix)
-        entry: .venv/bin/ruff
-        args: ["check", "--fix", "--show-fixes", "--output-format", "full", "--force-exclude"]
-        language: system
-        types: [python]
-
-      # 3) Ruff linter (verify only) - final check, fail if issues remain
-      - id: ruff-lint-verify
-        name: ruff check (verify, fail if issues remain)
-        entry: .venv/bin/ruff
-        args: ["check", "--output-format", "full", "--force-exclude"]
-        language: system
-        types: [python]
-
-      # 4) Pyright - Static type checking
+      # 3) Pyright — strict static type checking (project mode)
       - id: pyright
         name: pyright (type checking)
-        entry: .venv/bin/pyright
-        language: system
-        types: [python]
+        language: python
+        entry: pyright
+        pass_filenames: false                     # analyze the whole project
         args: ["--project", "pyrightconfig.jsonc"]
+        additional_dependencies:
+          - pyright>=1.1.404
+          - pytest>=8                             # ensures pytest is importable for fixtures in typing context
 
-      # 5) Pytest - Run tests before committing
+      # 4) Pytest — run the full suite before committing
       - id: pytest
         name: pytest (run tests)
-        entry: .venv/bin/pytest
-        language: system
-        types: [python]
-        pass_filenames: false   # don't pass staged filenames, run full suite
-        always_run: true        # run even if no Python files changed
-        args: ["-x"]            # -x = fail fast
-
-
-# Default Python for pre-commit hooks
-default_language_version:
-  python: python3
+        language: python
+        entry: pytest
+        pass_filenames: false                     # run full suite (not per-file)
+        always_run: true                          # even if no Python files changed
+        args: ["-x", "-q"]                        # -x = fail fast, -q = quiet but informative
+        additional_dependencies:
+          - pytest>=8
