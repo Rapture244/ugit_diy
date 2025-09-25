@@ -31,6 +31,18 @@ repos:
         entry: .venv/bin/pyright
         language: system
         types: [python]
+        args: ["--project", "pyrightconfig.jsonc"]
+
+      # 5) Pytest - Run tests before committing
+      - id: pytest
+        name: pytest (run tests)
+        entry: .venv/bin/pytest
+        language: system
+        types: [python]
+        pass_filenames: false   # don't pass staged filenames, run full suite
+        always_run: true        # run even if no Python files changed
+        args: ["-x"]            # -x = fail fast
+
 
 # Default Python for pre-commit hooks
 default_language_version:
