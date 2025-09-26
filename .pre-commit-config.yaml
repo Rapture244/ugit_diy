@@ -3,7 +3,7 @@ repos:
   #                                                       RUFF                                                        #
   # ================================================================================================================== #
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.1
+    rev: v0.13.2   # (Ruff requires 'v')
     hooks:
       # 1) Ruff Formatter — auto-format code (style only, like Black)
       - id: ruff-format
@@ -14,28 +14,26 @@ repos:
         args: ["--fix", "--show-fixes", "--output-format", "full"]
 
   # ================================================================================================================== #
-  #                                                  PYRIGHT + PYTEST                                                 #
+  #                                               BASEDPYRIGHT + PYTEST                                               #
   # ================================================================================================================== #
-  - repo: local
+  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
+    rev: 1.31.5    # (basedpyright no 'v')
     hooks:
-      # 3) Pyright — strict static type checking (project mode)
-      - id: pyright
-        name: pyright (type checking)
-        language: python
-        entry: pyright
+      # 3) BasedPyright — strict static type checking (project mode)
+      - id: basedpyright
+        name: basedpyright (type checking)
         pass_filenames: false                     # analyze the whole project
         args: ["--project", "pyrightconfig.jsonc"]
         additional_dependencies:
-          - pyright>=1.1.404
           - pytest>=8                             # ensures pytest is importable for fixtures in typing context
 
+  - repo: local
+    hooks:
       # 4) Pytest — run the full suite before committing
       - id: pytest
         name: pytest (run tests)
-        language: python
-        entry: pytest
-        pass_filenames: false                     # run full suite (not per-file)
-        always_run: true                          # even if no Python files changed
-        args: ["-x", "-q"]                        # -x = fail fast, -q = quiet but informative
-        additional_dependencies:
-          - pytest>=8
+        language: system
+        entry: .venv/bin/pytest
+        pass_filenames: false          # run full suite
+        always_run: true               # even if no Python files changed
+        # args: []                     # rely entirely on pytest.ini (no -q!)
