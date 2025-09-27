@@ -8,10 +8,15 @@ repos:
       # 1) Ruff Formatter — auto-format code (style only, like Black)
       - id: ruff-format
 
-      # 2) Ruff Linter (safe autofix) — catch issues + auto-fix safe ones
+      # 2) Safe autofix — quiet, doesn’t block
       - id: ruff
         name: ruff check (safe autofix)
-        args: ["--fix", "--show-fixes", "--output-format", "full"]
+        args: ["--fix", "--quiet"]
+
+      # 3) Final check — fails if anything left, shows full diagnostics
+      - id: ruff
+        name: ruff check (final, fail if issues)
+        args: ["--output-format", "full"]
 
   # ================================================================================================================== #
   #                                               BASEDPYRIGHT + PYTEST                                               #
