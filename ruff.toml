@@ -47,9 +47,14 @@ cache-dir = ".ruff_cache"
 # By default, run checks only (no writes). Opt into edits with `ruff --fix …` in CI/scripts when you want.
 fix = false
 
+# (Optional) Make CI logs easier to scan.
+# output-format = "grouped"
+
+# (Optional) Enforce a minimum Ruff version across machines.
+required-version = ">=0.13.1"
+
 # ==================================================================================================================== #
 # RULESETS & BEHAVIOR
-# In ruff.toml, this table is just [lint] (not [tool.ruff.lint]).
 # ==================================================================================================================== #
 [lint]
 # Rule families included in linting:
@@ -109,28 +114,36 @@ fixable = ["I", "UP", "E", "W", "COM", "F401", "F841"]
 # - RUF015: list(...)[0] -> next(iter(...)) changes exception semantics
 unfixable = ["B", "ISC", "ICN", "PGH", "RUF015"]
 
-# Treat underscore / unused_* as intentionally unused (great for throwaway loop vars and placeholders).
+# Treat underscore / unused_* as intentionally unused.
 dummy-variable-rgx = "^(_|unused_).*"
+
+# Keep TODO/FIXME recognized as task comments.
+task-tags = ["TODO", "FIXME"]
+
+# Allow Ruff to add `from __future__ import annotations` when it enables safer fixes
+future-annotations = true
 
 # ==================================================================================================================== #
 # DOCSTRING CONVENTION
-# In ruff.toml, plugin tables drop the prefix: use [lint.pydocstyle].
 # ==================================================================================================================== #
 [lint.pydocstyle]
 convention = "google"
 
+# Keep doc/comment width aligned with code width.
+ [lint.pycodestyle]
+ max-doc-length = 120
+
 # ==================================================================================================================== #
 # IMPORT ORDERING
-# In ruff.toml, use [lint.isort] (not [tool.ruff.lint.isort]).
 # ==================================================================================================================== #
 [lint.isort]
 known-first-party = ["ugit_diy"]
 combine-as-imports = true
 force-sort-within-sections = true
+# lines-after-imports = 1   # optional: keep imports tight (PEP8 default = 2)
 
 # ==================================================================================================================== #
 # PYTEST BEST PRACTICES
-# In ruff.toml, use [lint.flake8-pytest-style].
 # ==================================================================================================================== #
 [lint.flake8-pytest-style]
 fixture-parentheses = true            # Use @pytest.fixture() (with parens), even when no args are passed
@@ -138,30 +151,29 @@ parametrize-names-type = "tuple"      # Prefer tuple style: @pytest.mark.paramet
 
 # ==================================================================================================================== #
 # IMPORT HYGIENE
-# In ruff.toml, use [lint.flake8-tidy-imports].
 # ==================================================================================================================== #
 [lint.flake8-tidy-imports]
-ban-relative-imports = "all"          # Options: "all" | "parents" | "none"
+ban-relative-imports = "all"          # "all" | "parents" | "none"
 
 # ==================================================================================================================== #
 # BUILTINS SAFETY
-# In ruff.toml, use [lint.flake8-builtins].
+# NOTE: builtins-ignorelist is deprecated — use 'ignorelist'.
 # ==================================================================================================================== #
 [lint.flake8-builtins]
-builtins-ignorelist = []              # Add exceptions here only if absolutely necessary
+ignorelist = []                       # add names to ignore only if absolutely necessary
 
 # ==================================================================================================================== #
 # SCOPED NOISE CONTROL
-# In ruff.toml, use [lint.per-file-ignores].
 # ==================================================================================================================== #
 [lint.per-file-ignores]
-"tests/**" = ["F841", "S101"]       # allow unused vars and assert in tests
+"tests/**" = ["F841", "S101"]       # allow unused vars and bare 'assert' in tests
 "docs/**/*.py" = ["E402"]           # allow "import not at top" in docs
 "**/__init__.py" = ["F401"]         # allow re-export patterns
+# (Optional) If docstrings in tests are noisy:
+# "tests/**" = ["D"]
 
 # ==================================================================================================================== #
-# OPINIONATED CODE STYLE
-# In ruff.toml, use [format] (not [tool.ruff.format]).
+# OPINIONATED CODE STYLE (FORMATTER)
 # ==================================================================================================================== #
 [format]
 quote-style = "double"
@@ -170,3 +182,17 @@ skip-magic-trailing-comma = false
 line-ending = "lf"
 docstring-code-format = false              # Format code blocks inside docstrings as if they were Python
 docstring-code-line-length = "dynamic"
+
+# ==================================================================================================================== #
+# TYPE-CHECKING IMPORTS
+# Move imports used only for typing under `if TYPE_CHECKING`, and auto-quote annotations when needed.
+# ==================================================================================================================== #
+[lint.flake8-type-checking]
+quote-annotations = true                 # If moving an import would break runtime, quote the annotation to make it safe.
+
+# These are cheap/stdlib; keep them at runtime (don’t force into TYPE_CHECKING).
+exempt-modules = ["typing", "typing_extensions", "collections.abc"]
+
+runtime-evaluated-base-classes = []      # Add e.g. "pydantic.BaseModel" or "sqlalchemy.orm.DeclarativeBase" if you use them.
+runtime-evaluated-decorators = []        # Add e.g. "pydantic.validate_call" etc. if present in your stack.
+strict = true                            # Enforce TC001–TC003 even when a runtime import exists; pairs well with Pyright strict.

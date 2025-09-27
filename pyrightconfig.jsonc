@@ -1,11 +1,13 @@
 {
   // ==================================================================================================================
-  //                                                      PYRIGHT
+  //                                                    BASEDPYRIGHT
   // ==================================================================================================================
-  // NOTE: We are using a SOURCE LAYOUT. Configure Pyright to resolve imports via 'src'.
-  // This JSONC file is the single source of truth (Pyright ignores [tool.pyright] in pyproject.toml).
+  // Strict, fast type checking for a src/ layout. Single source of truth for editors & CLI.
   //
-  // Optional: JSON schema helps editors validate keys & offer IntelliSense.
+  // Locale: force English diagnostics when running the CLI by setting an env var, e.g.:
+  //   export LC_MESSAGES="en-us"   (or LC_ALL / LANG — basedpyright follows Pyright locale behavior)
+  //
+  // Optional: JSON schema (Pyright's is compatible and enables IntelliSense in many editors).
   "$schema": "https://raw.githubusercontent.com/microsoft/pyright/main/packages/pyright/schema/pyrightconfig.schema.json",
 
   // --- Environment / interpreter selection ---
@@ -39,37 +41,44 @@
   "useLibraryCodeForTypes": true,
 
   // --- Strictness baseline ---
-  "typeCheckingMode": "strict",
+  // basedpyright rule-set: choose "all" for maximum strictness and make warnings fail the CLI.
+  "typeCheckingMode": "all",
+  "failOnWarnings": true,
 
-  // Many third-party libs still lack stubs; downgrade to "warning" (or "none" if needed).
-  "reportMissingTypeStubs": "warning",
-
-  // Missing imports should remain a hard error.
+  // --- Core diagnostics you wanted strict ---
   "reportMissingImports": "error",
-
-  // Clean up stale/pointless ignores (# type: ignore / # pyright: ignore)
-  "reportUnnecessaryTypeIgnoreComment": "error",
-
-  // Catch subtle bugs / style issues strict mode might not elevate
-  "reportImplicitStringConcatenation": "error",
+  "reportMissingTypeStubs": "warning",             // keep practical; flip to "error" later if desired
+  "reportUnreachable": "error",                    // prefer hard-failing unreachable code
+  "reportUnnecessaryTypeIgnoreComment": "error",   // clean up stale ignores
+  "reportIgnoreCommentWithoutRule": "error",       // require # pyright: ignore[rule] not blanket ignores
   "reportPrivateUsage": "error",
+  "reportImplicitStringConcatenation": "error",
 
-  // --- Additional diagnostics (strict but practical) ---
-  // Encourage full typing without blocking iteration
+  // --- Additional strict but useful checks ---
+  "reportMissingTypeArgument": "error",
+  "reportIncompatibleVariableOverride": "error",
+  "reportInvalidCast": "error",
+  "reportImplicitRelativeImport": "error",         // pairs with Ruff ban on relative imports
+  "reportPrivateLocalImportUsage": "error",
+
+  // Hygiene / cleanup — escalate to hard errors (Ruff also helps here, duplication is OK tho)
+  "reportUnusedImport": "error",
+  "reportUnusedVariable": "error",
+  "reportUnusedParameter": "error",
+  // Encourage full typing without blocking iteration (warnings keep momentum)
   "reportUnknownVariableType": "warning",
   "reportUnknownParameterType": "warning",
   "reportUnknownArgumentType": "warning",
   "reportUnknownMemberType": "warning",
   "reportUntypedFunctionDecorator": "warning",
 
-  // Correctness hard errors
-  "reportMissingTypeArgument": "error",
-  "reportIncompatibleVariableOverride": "error",
-
-  // Hygiene / cleanup (keep codebase tidy)
-  "reportUnusedImport": "warning",
-  "reportUnusedVariable": "warning",
-  "reportUnreachable": "warning",
+  // Inference & typing behavior (aligns with basedpyright strict philosophy)
+  "strictListInference": true,
+  "strictDictionaryInference": true,
+  "strictSetInference": true,
+  "strictParameterNoneValue": true,
+  "deprecateTypingAliases": true,
+  "disableBytesTypePromotions": true,
 
   // Optional but handy if you add custom stubs later (keep folder at repo root)
   "stubPath": "typings",
@@ -79,7 +88,6 @@
 
   // --- Execution environments (robust for SRC layout) ---
   // Ensures imports like `import ugit_diy` work cleanly in editors and match installed behavior.
-  // Provide a tests-specific environment as well (keeps editors happy when opening tests/ directly).
   "executionEnvironments": [
     {
       "root": ".",
@@ -100,8 +108,7 @@
   // - Suppress errors from site-packages (3rd-party libs w/o types):
   //   "ignoreExternal": true
   //
-  // - Loosen tests only (e.g., basic mode in tests):
-  //   Create tests/pyrightconfig.jsonc with:
+  // - Loosen tests only (e.g., basic mode in tests) by adding tests/pyrightconfig.jsonc:
   //   { "typeCheckingMode": "basic" }
   // ---------------------------------------------------------------------------------------------------------------
 }
