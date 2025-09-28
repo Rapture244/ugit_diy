@@ -10,6 +10,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 # 3rd party
+import pytest
+
 # local
 from ugit_diy import __version__
 
@@ -18,7 +20,11 @@ from ugit_diy import __version__
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from _pytest.mark import MarkDecorator
     from tests.conftest import CliResult
+
+# ------------------------------------------------------ PYTEST ------------------------------------------------------ #
+pytestmark: MarkDecorator = pytest.mark.cli
 
 
 # ==================================================================================================================== #
@@ -26,7 +32,7 @@ if TYPE_CHECKING:
 # ==================================================================================================================== #
 def test_cli_no_args(run_cli: Callable[[list[str]], CliResult]) -> None:
     """Running the cli with no args prints help to stdout and exits with code 0."""
-    code, out, err = run_cli(["ugit"])
+    code, out, err = run_cli([])
 
     assert code == 0
     assert "usage: ugit" in out
@@ -36,7 +42,7 @@ def test_cli_no_args(run_cli: Callable[[list[str]], CliResult]) -> None:
 
 def test_cli_help_option(run_cli: Callable[[list[str]], CliResult]) -> None:
     """Running `ugit --help` prints help text and exits with code 0."""
-    code, out, err = run_cli(["ugit", "--help"])
+    code, out, err = run_cli(["--help"])
 
     assert code == 0
     assert "usage: ugit" in out
@@ -46,8 +52,9 @@ def test_cli_help_option(run_cli: Callable[[list[str]], CliResult]) -> None:
 
 def test_cli_version_option(run_cli: Callable[[list[str]], CliResult]) -> None:
     """Running `ugit --version` prints the version and exits with code 0."""
-    _, out, err = run_cli(["ugit", "--version"])
+    code, out, err = run_cli(["--version"])
 
     expected: str = f"ugit-diy v{__version__}\n"  # argparse adds a trailing newline
+    assert code == 0
     assert out == expected
     assert err == ""
