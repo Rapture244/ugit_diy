@@ -17,18 +17,11 @@ import sys
 # from typing import TYPE_CHECKING
 # local
 from ugit_diy.__init__ import __version__
+from ugit_diy.constants import DIST_NAME
 
 # --------------------------------------------------- BASEDPYRIGHT --------------------------------------------------- #
 # Imported only for static checkers; not used at runtime.
 # if TYPE_CHECKING:
-
-
-# ==================================================================================================================== #
-#                                                       CONSTANTS                                                      #
-# ==================================================================================================================== #
-# Distribution/package metadata
-# IMPORTANT: Must match the `[project].name` field in pyproject.toml.
-DIST_NAME = "ugit-diy"
 
 
 # ==================================================================================================================== #
