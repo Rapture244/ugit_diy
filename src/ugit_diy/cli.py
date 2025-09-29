@@ -86,25 +86,33 @@ def _dispatch(_ns: argparse.Namespace) -> int:
 #                                                         MAIN                                                         #
 # ==================================================================================================================== #
 def main(argv: Sequence[str] | None = None) -> int:
-    """Parse args and return an exit code (no sys.exit here).
+    """Parse CLI arguments and return an exit code (never calls sys.exit here).
 
-    Tests call `main([...])` directly; no global sys.argv patching. We also convert argparse's
-    SystemExit into an int exit code for simple assertions.
+    - In tests, we call `main([...])` directly with a custom argv list.
+    - In production, the console script entry point calls `main()` with no args.
+      In that case, we fall back to `sys.argv[1:]` to read the actual CLI input.
+    - We also convert argparse's SystemExit into an integer code to simplify testing.
     """
     parser: argparse.ArgumentParser = _build_parser()
 
-    # No args → print help to stdout and return 0
+    # 1. Support both direct calls (tests) and console_scripts (argv=None)
+    if argv is None:
+        argv = sys.argv[1:]
+
+    # 2. No args → show help (common UX)
     if not argv:
         parser.print_help()
         return 0
 
+    # 3. Parse arguments (catch SystemExit to make testing easier)
     try:
         ns: argparse.Namespace = parser.parse_args(argv)
     except SystemExit as e:
         return 0 if e.code is None else int(e.code)
 
+    # 4. Dispatch to subcommands or actions
     return _dispatch(ns)
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(main())
