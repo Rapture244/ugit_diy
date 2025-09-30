@@ -97,8 +97,10 @@ path = "src/ugit_diy/__init__.py"
 # Tell Hatchling where to find your package (src/ layout) and ship the typing marker.
 [tool.hatch.build.targets.wheel]
 packages = ["src/ugit_diy"]           # Point directly at the src path (string form avoids dict/table parsing issues).
+
 include = [
-  "src/ugit_diy/py.typed"
+  "src/ugit_diy/py.typed",
+  "src/ugit_diy/config/logging.json"
 ]
 
 # Source distribution: include everything needed to rebuild project from source.
@@ -106,6 +108,7 @@ include = [
 include = [
   "src/ugit_diy/**",
   "src/ugit_diy/py.typed",
+  "src/ugit_diy/config/logging.json",
   "README.md",
   "LICENSE",
   "pyproject.toml"
