@@ -5,8 +5,7 @@ Runtime behavior:
     1) Load the packaged logging dictConfig JSON referenced by LOGGING_CONFIG_RESOURCE_PATH.
     2) Normalize any file-handler filename into <REPO_ROOT>/logs (basename only).
     3) Apply dictConfig. If UGIT_LOG_LEVEL is set, override the root level accordingly.
-    4) If packaged config can't be loaded or applied, fall back to logging.basicConfig
-       with a strict ISO-ish format.
+    4) If packaged config can't be loaded or applied, fall back to logging.basicConfig with an ISO-ish format.
 
 Design choices:
     - Configure once, then emit any boot warnings (so log capture works predictably).
@@ -37,6 +36,7 @@ from typing import TYPE_CHECKING, cast
 
 # Local
 from ugit_diy.constants import LOGGING_CONFIG_RESOURCE_PATH
+from ugit_diy.paths import find_repo_root
 
 # --------------------------------------------------- BASEDPYRIGHT --------------------------------------------------- #
 # Imported only for static checkers; not used at runtime.
@@ -58,25 +58,6 @@ class InvalidLoggingConfigPathError(ValueError):
     def __init__(self) -> None:
         """Initialize with a descriptive validation message."""
         super().__init__("LOGGING_CONFIG_RESOURCE_PATH must be a 3-item tuple of strings: (package, subdir, filename)")
-
-
-class RepoRootNotFoundError(FileNotFoundError):
-    """Error raised when the repository root cannot be located.
-
-    The repository root is determined by walking upward from a starting directory until a `pyproject.toml` is found.
-    """
-
-    def __init__(self, start_dir: Path) -> None:
-        """Initialize the error with the starting directory.
-
-        Args:
-            start_dir: The directory from which the upward search was initiated.
-        """
-        msg = (
-            f"Could not find an upward 'pyproject.toml' starting from: {start_dir}. "
-            f"Ensure you're running this inside a valid Python project directory."
-        )
-        super().__init__(msg)
 
 
 # ==================================================================================================================== #
@@ -101,56 +82,20 @@ ENV_LOG_LEVEL: str = "UGIT_LOG_LEVEL"  # DEBUG/INFO/WARNING/ERROR/CRITICAL
 # ==================================================================================================================== #
 
 
-def _discover_repo_root(start_dir: Path) -> Path:
-    """Discover the repository root by searching upwards for pyproject.toml.
-
-    The first directory encountered (starting from start_dir and moving upward through its parents)
-    that contains pyproject.toml is considered the repository root.
-
-    Args:
-        start_dir: Directory to begin the upward search from.
-
-    Returns:
-        Absolute path to the repository root.
-
-    Raises:
-        RepoRootNotFoundError: If no pyproject.toml is found in start_dir or any of its parents.
-    """
-    start_abs_path: Path = start_dir.resolve()
-    for candidate in [start_abs_path, *list(start_abs_path.parents)]:
-        if (candidate / "pyproject.toml").is_file():
-            return candidate
-    raise RepoRootNotFoundError(start_dir)
-
-
 @lru_cache(maxsize=1)
 def _ensure_repo_logs_dir() -> Path:
-    """Ensure <REPO_ROOT>/logs exists and return its absolute path.
+    """Ensure and return the logs directory path.
 
-    This function is memoized so that the filesystem lookup and directory creation happen only
-    once per process.
+    Resolves the repository root using ``find_repo_root()`` and ensures a ``logs`` directory
+    exists at its top level. The directory is created if it does not already exist.
 
     Returns:
-        Absolute path to the repository's logs directory (created if necessary).
-
-    Raises:
-        RepoRootNotFoundError: If the repository root cannot be discovered.
+        Path: Absolute path to the ``logs`` directory within the repository root.
     """
-    repo_root: Path = _discover_repo_root(Path(__file__).parent)
+    repo_root: Path = find_repo_root(Path(__file__).parent)
     logs_dir: Path = repo_root / "logs"
     logs_dir.mkdir(parents=True, exist_ok=True)
     return logs_dir
-
-
-def get_logs_dir() -> Path:
-    """Return the absolute <REPO_ROOT>/logs directory path.
-
-    Convenience wrapper around _ensure_repo_logs_dir.
-
-    Returns:
-        Absolute path to the repository's logs directory.
-    """
-    return _ensure_repo_logs_dir()
 
 
 # ==================================================================================================================== #
@@ -271,7 +216,7 @@ def setup_logging() -> None:
     Notes:
         We queue up any boot warnings and emit them only after a handler exists, for reliable capture.
     """
-    logs_dir: Path = get_logs_dir()
+    logs_dir: Path = _ensure_repo_logs_dir()
     boot_warnings: list[tuple[str, tuple[object, ...]]] = []
 
     config = _load_packaged_logging_json()

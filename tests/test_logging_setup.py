@@ -7,9 +7,7 @@ This module tests the logging setup behavior of the `ugit_diy` package. It valid
 - Fallback behavior when the packaged logging configuration is missing or invalid.
 - Correct handling of the `UGIT_LOG_LEVEL` environment variable in fallback and packaged modes.
 - Proper rewriting of file handler paths into `<REPO_ROOT>/logs`.
-- Utility behavior of `get_logs_dir()` ensuring the log directory exists.
-
-These tests ensure the logging configuration is applied predictably and robustly across different scenarios.
+- Utility behavior of `_ensure_repo_logs_dir()` ensuring the log directory exists.
 """
 
 # ==================================================================================================================== #
@@ -65,31 +63,37 @@ def _reset_logging_state() -> Iterator[None]:  # pyright: ignore[reportUnusedFun
 
 @pytest.fixture()
 def tmp_logs_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Provide an isolated `<REPO_ROOT>/logs` directory by faking repo discovery.
+    """Provide an isolated `<REPO_ROOT>/logs` directory by faking repository discovery.
 
-    This fixture replaces `_discover_repo_root()` so that functions using it will resolve a temporary
-    project structure instead of the real one.
+    This fixture patches `find_repo_root()` (imported inside `logging_setup`) so that functions
+    using it resolve a temporary project root instead of the actual one. It also clears the
+    `_ensure_repo_logs_dir()` cache to ensure the patched path is used.
 
     Args:
-        tmp_path: A pytest-provided temporary directory unique per test.
-        monkeypatch: Fixture to safely patch functions or environment variables.
+        tmp_path: A pytest-provided temporary directory unique to each test.
+        monkeypatch: Fixture used to patch functions or environment variables.
 
     Returns:
-        Path: Absolute path to the fake `<REPO_ROOT>/logs` directory.
+        Path: Absolute path to the fake `<REPO_ROOT>/logs` directory created under the temporary repo.
     """
     fake_repo_root: Path = tmp_path / "repo"
     logs_directory: Path = fake_repo_root / "logs"
 
-    # Ensure the fake repo directory exists before writing pyproject.toml
+    # Ensure the fake repo directory and marker exist
     fake_repo_root.mkdir(parents=True, exist_ok=True)
     _ = (fake_repo_root / "pyproject.toml").write_text("[project]\nname='dummy'\n", encoding="utf-8")
 
-    def _fake_discover_repo_root(_start: Path) -> Path:
+    # Typed replacement for find_repo_root to satisfy Pyright
+    def _fake_find_repo_root(_start: Path | None = None) -> Path:
+        """Return the fake repository root for tests."""
         return fake_repo_root
 
-    monkeypatch.setattr(logsetup, "_discover_repo_root", _fake_discover_repo_root)
+    # Patch the imported symbol in the module under test
+    monkeypatch.setattr(logsetup, "find_repo_root", _fake_find_repo_root)
+
     # Clear lru_cache for _ensure_repo_logs_dir since we stub its dependency
     logsetup._ensure_repo_logs_dir.cache_clear()  # pyright: ignore[reportPrivateUsage]
+
     return logs_directory
 
 
@@ -162,10 +166,13 @@ def test_setup_logging_fallback_when_packaged_missing(
 
 
 def test_setup_logging_fallback_respects_env_level(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that fallback configuration honors `UGIT_LOG_LEVEL`.
+    """Test that fallback logging respects the `UGIT_LOG_LEVEL` environment variable.
+
+    Ensures that when the packaged logging configuration is missing and fallback mode is used,
+    the root logger level is set according to the `UGIT_LOG_LEVEL` environment variable.
 
     Args:
-        monkeypatch: Used to set the `UGIT_LOG_LEVEL` environment variable.
+        monkeypatch: Fixture used to set the `UGIT_LOG_LEVEL` environment variable.
     """
     monkeypatch.setattr(logsetup, "_load_packaged_logging_json", lambda: None)
     monkeypatch.setenv(logsetup.ENV_LOG_LEVEL, "WARNING")
@@ -225,11 +232,14 @@ def test_setup_logging_applies_packaged_and_rewrites_paths(tmp_logs_dir: Path, m
 
 
 def test_setup_logging_packaged_level_override_with_env(tmp_logs_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that `UGIT_LOG_LEVEL` overrides the root logger level even with packaged config.
+    """Test that `UGIT_LOG_LEVEL` overrides the root logger level with packaged config.
+
+    Verifies that when a packaged `dictConfig` is successfully loaded, the root logger level is
+    still overridden by the `UGIT_LOG_LEVEL` environment variable if it is set.
 
     Args:
-        tmp_logs_dir: Temporary `<REPO_ROOT>/logs` directory.
-        monkeypatch: Used to inject a fake packaged logging configuration and set the env var.
+        tmp_logs_dir: Temporary `<REPO_ROOT>/logs` directory provided by the test fixture.
+        monkeypatch: Fixture used to inject a fake packaged logging configuration and set the env var.
     """
     dict_config = {
         "version": 1,
@@ -257,7 +267,7 @@ def test_get_logs_dir_creates_and_returns_repo_logs(tmp_logs_dir: Path) -> None:
     Args:
         tmp_logs_dir: Temporary `<REPO_ROOT>/logs` directory.
     """
-    logs_directory = logsetup.get_logs_dir()
+    logs_directory = logsetup._ensure_repo_logs_dir()  # pyright: ignore[reportPrivateUsage]
     assert logs_directory == tmp_logs_dir
     assert logs_directory.exists()
     assert logs_directory.is_dir()
