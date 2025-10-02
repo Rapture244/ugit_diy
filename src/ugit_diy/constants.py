@@ -9,6 +9,9 @@ DIST_NAME = "ugit-diy"
 # Default packaged logging configuration (relative to the package)
 LOGGING_CONFIG_RESOURCE_PATH: tuple[str, ...] = ("ugit_diy", "config", "logging.json")
 
+# ------------------------------------------------------- REPO ------------------------------------------------------- #
+UGIT_DIR = ".ugit"
+
 # -------------------------------------------------------- CLI ------------------------------------------------------- #
 # (Reserved for future CLI-related constants, e.g., default command names or paths)
 # CLI_DEFAULT_COMMAND = "status"
