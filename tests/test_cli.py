@@ -13,14 +13,17 @@ from typing import TYPE_CHECKING
 import pytest
 
 # local
-from ugit_diy import __version__
+from ugit_diy import __version__, cli as cli_mod
+from ugit_diy.repo import RepoAlreadyExistsError
 
 # ------------------------------------------------------ PYRIGHT ----------------------------------------------------- #
 # Type-only imports (kept out of runtime for speed/cleanliness).
 if TYPE_CHECKING:
     from collections.abc import Callable
+    from pathlib import Path
 
     from _pytest.mark import MarkDecorator
+    from _pytest.monkeypatch import MonkeyPatch
     from tests.conftest import CliResult
 
 # ------------------------------------------------------ PYTEST ------------------------------------------------------ #
@@ -58,3 +61,38 @@ def test_cli_version_option(run_cli: Callable[[list[str]], CliResult]) -> None:
     assert code == 0
     assert out == expected
     assert err == ""
+
+
+def test_cli_init_success(monkeypatch: MonkeyPatch, run_cli: Callable[[list[str]], CliResult], tmp_path: Path) -> None:
+    """Running `ugit init` succeeds and logs the repo path."""
+    fake_repo_path: Path = tmp_path / "proj" / ".ugit"
+
+    def _fake_init_repo() -> Path:
+        return fake_repo_path
+
+    monkeypatch.setattr(cli_mod, "init_repo", _fake_init_repo)
+
+    code, out, err = run_cli(["init"])
+
+    assert code == 0
+    combined: str = out + err
+    assert "Initialized empty ugit repository in:" in combined
+    assert str(fake_repo_path) in combined
+
+
+def test_cli_init_already_exists(
+    monkeypatch: MonkeyPatch, run_cli: Callable[[list[str]], CliResult], tmp_path: Path
+) -> None:
+    """Running `ugit init` handles RepoAlreadyExistsError gracefully."""
+    existing_path: Path = tmp_path / "proj" / ".ugit"
+
+    def _raise() -> None:
+        raise RepoAlreadyExistsError(existing_path)
+
+    monkeypatch.setattr(cli_mod, "init_repo", _raise)
+
+    code, _, err = run_cli(["init"])
+
+    assert code == 1
+    assert "Repository initialization failed: repository already exists" in err
+    assert str(existing_path) in err

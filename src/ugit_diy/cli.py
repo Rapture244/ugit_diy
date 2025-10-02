@@ -8,20 +8,49 @@ Parses arguments and dispatches to command handlers.
 # ==================================================================================================================== #
 #                                                        IMPORTS                                                       #
 # ==================================================================================================================== #
+from __future__ import annotations
+
 # stdlib
 import argparse
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from importlib.metadata import PackageNotFoundError, version as _v
+import logging
 import sys
+from typing import TYPE_CHECKING, cast
 
-# from typing import TYPE_CHECKING
 # local
 from ugit_diy.__init__ import __version__
 from ugit_diy.constants import DIST_NAME
+from ugit_diy.logging_setup import setup_logging
+from ugit_diy.repo import RepoAlreadyExistsError, init_repo
 
 # --------------------------------------------------- BASEDPYRIGHT --------------------------------------------------- #
 # Imported only for static checkers; not used at runtime.
-# if TYPE_CHECKING:
+if TYPE_CHECKING:
+    from pathlib import Path
+
+# ------------------------------------------------------ LOGGING ----------------------------------------------------- #
+log: logging.Logger = logging.getLogger(__name__)
+
+
+# ==================================================================================================================== #
+#                                                   COMMAND HANDLERS                                                   #
+# ==================================================================================================================== #
+def cmd_init(_args: argparse.Namespace) -> int:
+    """Initialize a new ugit repository under the project root.
+
+    Returns:
+        int: 0 on success, 1 if a repository already exists.
+    """
+    try:
+        repo_path: Path = init_repo()
+    except RepoAlreadyExistsError:
+        # TRY400: prefer logging.exception in except blocks to include traceback
+        log.exception("Repository initialization failed: repository already exists")
+        return 1
+    else:
+        log.info("Initialized empty ugit repository in: %s", repo_path)
+        return 0
 
 
 # ==================================================================================================================== #
@@ -32,7 +61,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog="ugit",
         description="A tiny Git-like version control system for learning Git.",
-        usage="%(prog)s [OPTIONS]",
+        usage="%(prog)s [OPTIONS] <COMMAND> [ARGS]",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         add_help=False,  # suppress auto-help, we add it in the group
         allow_abbrev=False,  # avoid accidental abbrevs (e.g. --ver → --version)
@@ -63,6 +92,15 @@ def _build_parser() -> argparse.ArgumentParser:
         version=shown_version,
         help=f"Display the {DIST_NAME} version",
     )
+
+    # ------- subcommands ------- #
+    subparsers = parser.add_subparsers(dest="cmd", metavar="<command>")
+    subparsers.required = True
+
+    # init
+    p_init = subparsers.add_parser("init", help="Initialize a new ugit repository")
+    p_init.set_defaults(func=cmd_init)
+
     return parser
 
 
@@ -70,9 +108,15 @@ def _build_parser() -> argparse.ArgumentParser:
 #                                                        DISPATCH                                                      #
 # ==================================================================================================================== #
 # TODO: Future subcommands will be added here (e.g. `init`, `commit`, `log`, etc.).
-def _dispatch(_ns: argparse.Namespace) -> int:
-    """Route to subcommands based on parsed args. No subcommands yet → succeed."""
-    return 0
+def _dispatch(ns: argparse.Namespace) -> int:
+    """Route to the subcommand specified in the parsed namespace."""
+    if hasattr(ns, "func"):
+        log.debug("Dispatching to subcommand: %s", getattr(ns, "cmd", "<unknown>"))
+        func = cast("Callable[[argparse.Namespace], int]", ns.func)
+        return func(ns)
+
+    log.error("No subcommand specified")
+    return 2
 
 
 # ==================================================================================================================== #
@@ -86,6 +130,9 @@ def main(argv: Sequence[str] | None = None) -> int:
       In that case, we fall back to `sys.argv[1:]` to read the actual CLI input.
     - We also convert argparse's SystemExit into an integer code to simplify testing.
     """
+    # 0) Configure logging as early as possible
+    setup_logging()
+
     parser: argparse.ArgumentParser = _build_parser()
 
     # 1. Support both direct calls (tests) and console_scripts (argv=None)
